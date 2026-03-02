@@ -137,5 +137,10 @@ export class StaticProducts {
   getAllCategories(): ICategory[] {
   return this.catList;
 }
+
+  mapProductsToId():number[]{
+    //3aiza a7awel al array of products l array of ids 
+   return this.products.map((prd)=>prd.id)
+  }
   
 }

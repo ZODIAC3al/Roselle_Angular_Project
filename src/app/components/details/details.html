@@ -16,15 +16,26 @@
     <button class="btn-rsl btn-rsl--ghost d-inline-flex align-items-center gap-2" (click)="goBack()">
       <i class="fas fa-arrow-left" style="font-size:11px;"></i> Back
     </button>
+ 
+
+  <!--Next Product-->
+    <button class="btn-rsl btn-rsl--ghost d-inline-flex align-items-center gap-2" (click)="goNext()">
+      <i class="fas fa-arrow-right" style="font-size:11px;"></i> Next
+    </button>
+ 
+  <!--Previous-->
+    <button class="btn-rsl btn-rsl--ghost d-inline-flex align-items-center gap-2" (click)="goPrevious()">
+      <i class="fas fa-arrow-left" style="font-size:11px;"></i> Previous
+    </button>
   </div>
+
+  <!-------------------------------------------------------------------------------------->
 
   <!-- BREADCRUMB -->
   <nav class="rsl-breadcrumb" aria-label="breadcrumb">
     <div class="container-xxl px-4 px-md-5">
       <ol>
         <li><a routerLink="/Master">Home</a></li>
-        <li><span class="sep">·</span></li>
-        <li><a routerLink="/shop">Shop</a></li>
         <li><span class="sep">·</span></li>
         <li class="current">{{ p.name }}</li>
       </ol>
@@ -151,31 +162,4 @@
       </div><!-- /row -->
     </div>
   </section>
-
-  <!-- ── DETAILS STRIP ── -->
-  <section class="details-strip">
-    <div class="container-xxl px-4 px-md-5">
-      <div class="row g-4">
-        <div class="col-md-4">
-          <div class="detail-card">
-            <span class="detail-card__label">Product ID</span>
-            <span class="detail-card__value">#{{ p.id | number:'4.0-0' }}</span>
-          </div>
-        </div>
-        <div class="col-md-4">
-          <div class="detail-card">
-            <span class="detail-card__label">Category</span>
-            <span class="detail-card__value">No. {{ p.categoryId }}</span>
-          </div>
-        </div>
-        <div class="col-md-4">
-          <div class="detail-card">
-            <span class="detail-card__label">Units Available</span>
-            <span class="detail-card__value">{{ p.quantity }}</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
 </div><!-- /details-page -->
