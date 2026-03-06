@@ -1,0 +1,198 @@
+<div class="admin-page">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">Roselle <span>Admin</span></div>
+    <nav class="sidebar-nav">
+      <button [class.active]="activeTab === 'products'" (click)="activeTab='products'">
+        <i class="bi bi-box-seam"></i> Products
+      </button>
+      <button [class.active]="activeTab === 'orders'" (click)="activeTab='orders'">
+        <i class="bi bi-bag-check"></i> Orders
+        <span class="badge" *ngIf="orders.length">{{ orders.length }}</span>
+      </button>
+      <button [class.active]="activeTab === 'stats'" (click)="activeTab='stats'">
+        <i class="bi bi-bar-chart"></i> Analytics
+      </button>
+    </nav>
+    <button class="sidebar-logout" (click)="logout()">
+      <i class="bi bi-box-arrow-left"></i> Logout
+    </button>
+  </aside>
+
+  <!-- Main -->
+  <main class="admin-main">
+    <!-- Topbar -->
+    <div class="admin-topbar">
+      <h1 *ngIf="activeTab === 'products'">Product Management</h1>
+      <h1 *ngIf="activeTab === 'orders'">Orders</h1>
+      <h1 *ngIf="activeTab === 'stats'">Analytics</h1>
+      <div class="topbar-right">
+        <a routerLink="/Master" class="btn-store"><i class="bi bi-shop"></i> View Store</a>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <i class="bi bi-box-seam"></i>
+        <div>
+          <span class="stat-val">{{ stats.totalProducts }}</span>
+          <span class="stat-label">Products</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <i class="bi bi-bag-check"></i>
+        <div>
+          <span class="stat-val">{{ stats.totalOrders }}</span>
+          <span class="stat-label">Orders</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <i class="bi bi-currency-dollar"></i>
+        <div>
+          <span class="stat-val">{{ stats.totalRevenue | currency:'EGP':'symbol':'1.0-0' }}</span>
+          <span class="stat-label">Revenue</span>
+        </div>
+      </div>
+      <div class="stat-card warn">
+        <i class="bi bi-exclamation-triangle"></i>
+        <div>
+          <span class="stat-val">{{ stats.lowStock }}</span>
+          <span class="stat-label">Low Stock</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- PRODUCTS TAB -->
+    <div *ngIf="activeTab === 'products'">
+      <div class="tab-toolbar">
+        <div class="search-wrap">
+          <i class="bi bi-search"></i>
+          <input type="text" [(ngModel)]="searchTerm" placeholder="Search products..." />
+        </div>
+        <button class="btn-add" (click)="openAdd()">
+          <i class="bi bi-plus-lg"></i> Add Product
+        </button>
+      </div>
+
+      <div class="products-table-wrap">
+        <table class="products-table">
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th>Category</th>
+              <th>Price</th>
+              <th>Stock</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let p of filteredProducts">
+              <td>
+                <div class="product-cell">
+                  <img [src]="p.imgUrl" [alt]="p.name" />
+                  <div>
+                    <span class="product-name">{{ p.name }}</span>
+                    <span class="product-desc">{{ p.description | slice:0:50 }}...</span>
+                  </div>
+                </div>
+              </td>
+              <td><span class="cat-badge">Cat #{{ p.categoryId }}</span></td>
+              <td>{{ p.price | currency:'EGP':'symbol':'1.0-0' }}</td>
+              <td>
+                <span class="stock-badge" [class.low]="p.quantity <= 2">
+                  {{ p.quantity }} left
+                </span>
+              </td>
+              <td>
+                <div class="action-btns">
+                  <button class="btn-edit" (click)="openEdit(p)"><i class="bi bi-pencil"></i></button>
+                  <button class="btn-del" (click)="delete(p.id)"><i class="bi bi-trash3"></i></button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ORDERS TAB -->
+    <div *ngIf="activeTab === 'orders'">
+      <div *ngIf="orders.length === 0" class="empty-state">
+        <i class="bi bi-bag-x"></i>
+        <p>No orders yet</p>
+      </div>
+      <div class="orders-list" *ngIf="orders.length > 0">
+        <div *ngFor="let o of orders" class="order-row">
+          <div class="order-row-id">
+            <strong>{{ o.id }}</strong>
+            <span>{{ o.date }}</span>
+          </div>
+          <div class="order-row-info">
+            <span>{{ o.items.length }} item(s)</span>
+            <span>{{ o.paymentMethod }}</span>
+          </div>
+          <span class="status-badge">{{ o.status }}</span>
+          <span class="order-row-total">{{ o.total | currency:'EGP':'symbol':'1.0-0' }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- STATS TAB -->
+    <div *ngIf="activeTab === 'stats'" class="analytics-placeholder">
+      <i class="bi bi-bar-chart-line"></i>
+      <h3>Analytics Dashboard</h3>
+      <p>Sales charts and detailed reports will appear here.</p>
+    </div>
+
+  </main>
+</div>
+
+<!-- Add/Edit Modal -->
+<div class="modal-overlay" *ngIf="showModal" (click)="showModal=false">
+  <div class="modal-box" (click)="$event.stopPropagation()">
+    <h2>{{ editingProduct ? 'Edit Product' : 'Add New Product' }}</h2>
+    <button class="modal-close" (click)="showModal=false"><i class="bi bi-x-lg"></i></button>
+
+    <div class="modal-form">
+      <div class="mfield">
+        <label>Product Name</label>
+        <input type="text" [(ngModel)]="form.name" placeholder="e.g. Silk Evening Gown" />
+      </div>
+      <div class="mrow">
+        <div class="mfield">
+          <label>Price (EGP)</label>
+          <input type="number" [(ngModel)]="form.price" placeholder="0" />
+        </div>
+        <div class="mfield">
+          <label>Stock Quantity</label>
+          <input type="number" [(ngModel)]="form.quantity" placeholder="1" />
+        </div>
+      </div>
+      <div class="mfield">
+        <label>Category ID</label>
+        <select [(ngModel)]="form.categoryId">
+          <option [value]="1">Suits</option>
+          <option [value]="2">Bags</option>
+          <option [value]="3">Shoes</option>
+          <option [value]="4">Coats</option>
+          <option [value]="5">Dresses</option>
+        </select>
+      </div>
+      <div class="mfield">
+        <label>Image URL</label>
+        <input type="text" [(ngModel)]="form.imgUrl" placeholder="assets/images/img1.jpg" />
+      </div>
+      <div class="mfield">
+        <label>Description</label>
+        <textarea [(ngModel)]="form.description" rows="3" placeholder="Product description..."></textarea>
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-cancel" (click)="showModal=false">Cancel</button>
+      <button class="btn-save" (click)="save()">{{ editingProduct ? 'Save Changes' : 'Add Product' }}</button>
+    </div>
+  </div>
+</div>

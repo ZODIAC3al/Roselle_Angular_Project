@@ -1,26 +1,46 @@
 <div class="row row-cols-1 row-cols-md-4 g-4">
     <div class="col" *ngFor="let product of filteratedList">
     <div class="card" appHighlightCard>
-      <img [src]="product.imgUrl" class="card-img-top" alt="...">
+
+      <!-- Image with wishlist overlay -->
+      <div class="card-img-wrapper">
+        <img [src]="product.imgUrl" class="card-img-top" alt="...">
+        <button
+          class="wishlist-btn"
+          [class.active]="isInWishlist(product.id)"
+          (click)="toggleWishlist(product, $event)"
+          [title]="isInWishlist(product.id) ? 'Remove from Wishlist' : 'Add to Wishlist'"
+        >
+          <i [class]="isInWishlist(product.id) ? 'bi bi-heart-fill' : 'bi bi-heart'"></i>
+        </button>
+      </div>
+
       <div class="card-body">
-        <h5 class="card-title" style="color:brown" >{{product.name}}</h5>
+        <h5 class="card-title" style="color:brown">{{product.name}}</h5>
         <p class="card-text" style="color:grey">{{product.description}}</p>
-        <p class="card-text" > Price: {{ product.price | currency:'EGP ':'symbol':'1.0-0' }}</p>
+        <p class="card-text">Price: {{ product.price | currency:'EGP ':'symbol':'1.0-0' }}</p>
         <div [ngSwitch]="product.quantity">
           <p *ngSwitchCase="0" style="color:red">Quantity : Sold Out</p>
-          <p *ngSwitchCase="1">Quantity : Last Piece </p>
-          <p *ngSwitchDefault >Quantity : {{product.quantity}}</p>
+          <p *ngSwitchCase="1">Quantity : Last Piece</p>
+          <p *ngSwitchDefault>Quantity : {{product.quantity}}</p>
         </div>
-        <button class="addtocart" (click)="addToCart(product)">Add to Cart</button>
-      <br>
-      <br>
-        <!-- <button class="btn btn-outline-secondary" routerLink="/Details"  >Show details</button>
-   -->
-         <button class="btn btn-outline-secondary" (click)="navigateToDetails(product.id)"  >Show details</button>
-  
-        
+
+        <div class="card-actions">
+          <button
+            class="addtocart"
+            (click)="addToCart(product)"
+            [disabled]="product.quantity === 0"
+            [class.added]="addedToCartId === product.id"
+          >
+            <i class="bi" [class]="addedToCartId === product.id ? 'bi-check-lg' : 'bi-bag-plus'"></i>
+            {{ addedToCartId === product.id ? 'Added!' : (isInCart(product.id) ? 'Add Again' : 'Add to Cart') }}
+          </button>
+          <button class="btn-details" (click)="navigateToDetails(product.id)">
+            <i class="bi bi-eye"></i>
+          </button>
+        </div>
+
       </div>
-       </div>
+    </div>
   </div>
- 
 </div>
