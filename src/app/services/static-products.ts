@@ -48,7 +48,7 @@ export class StaticProducts {
     quantity: 4,
     imgUrl: 'assets/images/img4.jpg',
     categoryId: 2,
-    description: 'Spacious structured design crafted from finest leather for everyday luxury.'
+    description: 'Spacious structured design crafted from finest leather for everyday luxury'
   },
 
   // --- Shoes (categoryId: 3) ---
