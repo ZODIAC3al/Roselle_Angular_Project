@@ -10,7 +10,7 @@
 </div>
 
 <!-- ── Hero Banners ── -->
-<section class="home-banners" *ngIf="activeBanners.length > 0">
+<!-- <section class="home-banners" *ngIf="activeBanners.length > 0">
   <div class="banner-track">
     <div class="banner-slide" *ngFor="let b of activeBanners">
       <img [src]="b.imageUrl" [alt]="b.title" />
@@ -20,7 +20,7 @@
       </div>
     </div>
   </div>
-</section>
+</section> -->
 
 <!-- ── Featured Products ── -->
 <section class="featured-section" *ngIf="featuredProducts.length > 0">
@@ -45,7 +45,26 @@
   </div>
 </section>
 
-<!-- ── Categories ── -->
+<!-- ══════════════════════════════════════════════════
+     ── Tier 1 : Gender Selector ──
+     ══════════════════════════════════════════════════ -->
+<section class="flaura-gender-section py-4">
+  <div class="container">
+    <div class="d-flex justify-content-center gap-3">
+      @for (g of genderList; track g.id) {
+        <button
+          class="flaura-gender-tab"
+          [ngClass]="{ active: selectedGender === g.id }"
+          (click)="selectGender(g.id)"
+        >{{ g.name }}</button>
+      }
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════
+     ── Tier 2 : Category Tabs ──
+     ══════════════════════════════════════════════════ -->
 <section class="flaura-category-section py-5">
   <div class="container">
     <div class="text-center mb-4">

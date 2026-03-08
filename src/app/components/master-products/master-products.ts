@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { Products } from '../products/products';
 import { ICategory } from '../../models/icategory';
 import { NgClass, CommonModule } from '@angular/common';
-import { StaticProducts } from '../../services/static-products';
+import { StaticProducts, IGender } from '../../services/static-products';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../services/auth.service';
@@ -17,12 +17,19 @@ import { IProduct } from '../../models/iproduct';
   styleUrl: './master-products.css',
 })
 export class MasterProducts implements OnInit {
+  // ── Gender tier ────────────────────────────────────
+  genderList: IGender[] = [];
+  selectedGender: string = 'all';   // 'all' | 'women' | 'men'
+
+  // ── Category tier ──────────────────────────────────
   selectedCatId: number = 0;
   catList: ICategory[] = [];
 
+  // ── Search / Price ─────────────────────────────────
   searchTerm = '';
   minPrice: number | null = null;
   maxPrice: number | null = null;
+
   filteredProducts: IProduct[] = [];
   allProducts: IProduct[] = [];
 
@@ -33,33 +40,50 @@ export class MasterProducts implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.catList = this._prdService.getAllCategories();
+    this.genderList  = this._prdService.getAllGenders();
+    this.catList     = this._prdService.getAllCategories();
     this.allProducts = this._prdService.getAllProducts();
     this.applyFilters();
   }
 
-  // Read live from CartService — always accurate even after navigation
+  // ── Live cart getters ──────────────────────────────
   get cartCount(): number  { return this.cartService.getCartCount(); }
   get grandTotal(): number { return this.cartService.getGrandTotal(); }
 
-  // Keep EventEmitter wired (products child still emits) but we don't need it for display
-  receiveTotal(_total: number) { /* no-op — grandTotal is now a live getter */ }
+  receiveTotal(_total: number) { /* no-op */ }
 
-  selectCategory(id: number) {
+  // ── Gender selection ───────────────────────────────
+  selectGender(id: string): void {
+    this.selectedGender = id;
+    this.selectedCatId  = 0;   // reset subcategory when gender changes
+    this.applyFilters();
+  }
+
+  // ── Category selection ─────────────────────────────
+  selectCategory(id: number): void {
     this.selectedCatId = id;
     this.applyFilters();
   }
 
+  // ── Master filter pipeline ─────────────────────────
   applyFilters(): void {
-    let list = this.selectedCatId === 0
+    // 1. Gender filter
+    let list = this.selectedGender === 'all'
       ? this.allProducts
-      : this.allProducts.filter(p => p.categoryId === this.selectedCatId);
+      : this.allProducts.filter(p => p.gender === this.selectedGender);
 
+    // 2. Category filter
+    if (this.selectedCatId !== 0) {
+      list = list.filter(p => p.categoryId === this.selectedCatId);
+    }
+
+    // 3. Search filter
     if (this.searchTerm.trim()) {
       const q = this.searchTerm.toLowerCase();
       list = list.filter(p => p.name.toLowerCase().includes(q));
     }
 
+    // 4. Price filters
     if (this.minPrice !== null) list = list.filter(p => p.price >= this.minPrice!);
     if (this.maxPrice !== null) list = list.filter(p => p.price <= this.maxPrice!);
 
@@ -67,9 +91,9 @@ export class MasterProducts implements OnInit {
   }
 
   clearFilters(): void {
-    this.searchTerm = '';
-    this.minPrice = null;
-    this.maxPrice = null;
+    this.searchTerm    = '';
+    this.minPrice      = null;
+    this.maxPrice      = null;
     this.applyFilters();
   }
 

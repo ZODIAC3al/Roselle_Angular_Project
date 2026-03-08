@@ -5,5 +5,6 @@ export interface IProduct {
   quantity: number;
   imgUrl: string;
   categoryId: number;
+  gender?: 'women' | 'men';
   description: string;
 }
