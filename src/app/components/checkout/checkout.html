@@ -135,27 +135,50 @@
           Pay in cash when your order is delivered. Additional 20 EGP COD fee applies.
         </div>
 
-        <!-- Promo -->
         <div class="promo-section">
-          <label>Promo Code</label>
-          <div class="promo-row">
+          <label class="promo-label">Promo Code</label>
+
+          <div class="promo-row" *ngIf="!promoApplied">
             <input
               type="text"
               [(ngModel)]="promoCode"
-              placeholder="Enter code (e.g. ROSELLE10)"
-              [disabled]="promoApplied"
+              placeholder="e.g. SAVE15"
+              class="promo-input"
+              [disabled]="promoLoading"
+              (keyup.enter)="applyPromo()"
             />
             <button
               class="btn-promo"
               (click)="applyPromo()"
-              [disabled]="promoApplied || !promoCode"
+              [disabled]="!promoCode || promoLoading"
             >
-              {{ promoApplied ? '✓ Applied' : 'Apply' }}
+              <span *ngIf="promoLoading" class="promo-spinner"></span>
+              <span *ngIf="!promoLoading">Apply</span>
             </button>
           </div>
-          <p class="promo-success" *ngIf="promoApplied">
-            🎉 {{ promoDiscount | currency: 'EGP' : 'symbol' : '1.0-0' }} discount applied!
+
+          <!-- Error -->
+          <p class="promo-error" *ngIf="promoError">
+            <i class="bi bi-x-circle-fill"></i> {{ promoError }}
           </p>
+
+          <!-- Success banner -->
+          <div class="promo-success-banner" *ngIf="promoApplied">
+            <div class="promo-success-left">
+              <i class="bi bi-tag-fill promo-icon"></i>
+              <div>
+                <p class="promo-success-title">
+                  Code <strong>{{ promoCode.toUpperCase() }}</strong> applied!
+                </p>
+                <p class="promo-success-sub">
+                  You saved {{ promoDiscount | currency: 'EGP' : 'symbol' : '1.0-0' }} on this order
+                </p>
+              </div>
+            </div>
+            <button class="btn-remove-promo" (click)="removePromo()">
+              <i class="bi bi-x"></i>
+            </button>
+          </div>
         </div>
 
         <div class="step-btns">
