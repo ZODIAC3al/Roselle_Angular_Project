@@ -273,4 +273,9 @@ export class StaticProducts {
   mapProductsToId(): string[] {
     return this._products$.getValue().map((p) => p._id);
   }
+
+  /** Called by AdminDashboard after any create/update/delete to refresh the whole site */
+  reloadProducts(): void {
+    this.loadProducts();
+  }
 }

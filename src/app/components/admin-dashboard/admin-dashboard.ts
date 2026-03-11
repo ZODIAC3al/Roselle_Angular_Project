@@ -219,10 +219,29 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule, CurrencyPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink, Router } from '@angular/router';
-import { StaticProducts } from '../../services/static-products';
+import { HttpClient } from '@angular/common/http';
 import { Subscription } from 'rxjs';
+
+import { StaticProducts } from '../../services/static-products';
+import { ProductService, IProductPayload } from '../../services/product.service';
 import { IProduct } from '../../models/iproduct';
-import { AuthService, IUser, IPromoCode, IBanner } from '../../services/auth.service';
+import { AuthService, IPromoCode, IBanner } from '../../services/auth.service';
+
+export interface IApiCategory {
+  _id: string;
+  category_name: string;
+}
+
+export interface IDbUser {
+  _id: string;
+  name: string;
+  email: string;
+  role: string;
+  isblocked: boolean;
+  isVerified: boolean;
+  deletedAt: string | null;
+  createdAt: string;
+}
 
 @Component({
   selector: 'app-admin-dashboard',
@@ -233,26 +252,31 @@ import { AuthService, IUser, IPromoCode, IBanner } from '../../services/auth.ser
 })
 export class AdminDashboard implements OnInit, OnDestroy {
   private sub!: Subscription;
+
+  private readonly apiUrl = 'http://localhost:3000/api';
+
   products: IProduct[] = [];
   activeTab = 'products';
   searchTerm = '';
   showModal = false;
+  saving = false;
   editingProduct: IProduct | null = null;
 
-  // Use a plain object for the form to avoid IProduct type conflicts
+  apiCategories: IApiCategory[] = [];
+
   form: {
     name?: string;
     price?: number;
-    quantity?: number;
     stock?: number;
     imgUrl?: string;
-    image?: string;
-    categoryId?: string; // string to match IProduct
+    categoryId?: string;
     description?: string;
+    gender?: 'men' | 'women' | 'unisex';
   } = {};
 
-  // User management
-  users: IUser[] = [];
+  // Users from DB
+  dbUsers: IDbUser[] = [];
+  usersLoading = false;
 
   // Promo codes
   showPromoModal = false;
@@ -265,9 +289,11 @@ export class AdminDashboard implements OnInit, OnDestroy {
   bannerForm: Partial<IBanner> = {};
 
   constructor(
-    private productService: StaticProducts,
+    private productStore: StaticProducts,
+    private productApi: ProductService,
     private auth: AuthService,
     private router: Router,
+    private http: HttpClient,
   ) {}
 
   ngOnInit(): void {
@@ -275,13 +301,53 @@ export class AdminDashboard implements OnInit, OnDestroy {
       this.router.navigate(['/login']);
       return;
     }
-    this.sub = this.productService.products$.subscribe((prds) => {
+
+    this.sub = this.productStore.products$.subscribe((prds) => {
       this.products = prds;
     });
-    this.users = this.auth.getAllUsers();
+
+    this.http.get<any>(`${this.apiUrl}/categories?limit=50`).subscribe((res) => {
+      this.apiCategories = res.data?.categories ?? [];
+    });
   }
 
-  // ── Products ──────────────────────────────────────
+  ngOnDestroy(): void {
+    this.sub?.unsubscribe();
+  }
+
+  // ── Tab switch — load users on demand ─────────────
+  onTabChange(tab: string): void {
+    this.activeTab = tab;
+    if (tab === 'users' && this.dbUsers.length === 0) {
+      this.loadUsers();
+    }
+  }
+
+  loadUsers(): void {
+    this.usersLoading = true;
+    this.http.get<any>(`${this.apiUrl}/user/all`).subscribe({
+      next: (res) => {
+        this.dbUsers = res.users ?? [];
+        this.usersLoading = false;
+      },
+      error: (err) => {
+        console.error('Failed to load users', err);
+        this.usersLoading = false;
+      },
+    });
+  }
+
+  toggleBlock(user: IDbUser): void {
+    this.http.patch<any>(`${this.apiUrl}/user/block/${user._id}`, {}).subscribe({
+      next: (res) => {
+        user.isblocked = res.user.isblocked;
+      },
+      error: (err) => console.error('Block/unblock failed', err),
+    });
+  }
+
+  // ── Products ───────────────────────────────────────
+
   get filteredProducts(): IProduct[] {
     return this.products.filter((p) =>
       p.name.toLowerCase().includes(this.searchTerm.toLowerCase()),
@@ -290,56 +356,93 @@ export class AdminDashboard implements OnInit, OnDestroy {
 
   openAdd(): void {
     this.editingProduct = null;
-    this.form = { categoryId: '1', quantity: 1 }; // categoryId is string
+    this.form = {
+      categoryId: this.apiCategories[0]?._id ?? '',
+      stock: 1,
+      gender: 'unisex',
+    };
     this.showModal = true;
   }
 
   openEdit(product: IProduct): void {
     this.editingProduct = product;
-    this.form = { ...product };
+    const catId =
+      typeof product.categoryId === 'object'
+        ? (product.categoryId as any)?._id?.toString()
+        : product.categoryId;
+    this.form = {
+      name: product.name,
+      price: product.price,
+      stock: product.stock ?? product.quantity,
+      imgUrl: product.imgUrl || product.image,
+      categoryId: catId,
+      description: product.description,
+      gender: product.gender as any,
+    };
     this.showModal = true;
   }
 
   save(): void {
-    if (!this.form.name || !this.form.price) return;
+    if (!this.form.name || !this.form.price || !this.form.categoryId) return;
+
+    this.saving = true;
+
+    const payload: IProductPayload = {
+      name: this.form.name,
+      description: this.form.description || '',
+      price: Number(this.form.price),
+      categoryId: this.form.categoryId,
+      stock: Number(this.form.stock ?? 1),
+      image: this.form.imgUrl || '',
+      gender: this.form.gender ?? 'unisex',
+    };
 
     if (this.editingProduct) {
-      Object.assign(this.editingProduct, this.form);
+      this.productApi.updateProduct(this.editingProduct._id, payload).subscribe({
+        next: () => {
+          this.productStore.reloadProducts();
+          this.showModal = false; // ← close modal on success
+          this.saving = false;
+        },
+        error: (err) => {
+          console.error('Update failed', err);
+          alert('Update failed: ' + (err.error?.message || err.message));
+          this.saving = false;
+        },
+      });
     } else {
-      // Generate a temporary local _id for admin-created products
-      const tempId = 'local-' + Date.now().toString();
-      const newProduct: IProduct = {
-        _id: tempId,
-        name: this.form.name!,
-        price: this.form.price!,
-        quantity: this.form.quantity ?? 1,
-        stock: this.form.quantity ?? 1,
-        imgUrl: this.form.imgUrl || 'assets/images/img1.jpg',
-        image: this.form.imgUrl || 'assets/images/img1.jpg',
-        categoryId: this.form.categoryId || '1',
-        description: this.form.description || '',
-      };
-      this.products.push(newProduct);
+      this.productApi.createProduct(payload).subscribe({
+        next: () => {
+          this.productStore.reloadProducts();
+          this.showModal = false; // ← close modal on success
+          this.saving = false;
+        },
+        error: (err) => {
+          console.error('Create failed', err);
+          alert('Create failed: ' + (err.error?.message || err.message));
+          this.saving = false;
+        },
+      });
     }
-    this.showModal = false;
   }
 
   delete(id: string): void {
-    if (confirm('Delete this product?')) this.products = this.products.filter((p) => p._id !== id);
+    if (!confirm('Delete this product permanently from the database?')) return;
+    this.productApi.deleteProduct(id).subscribe({
+      next: () => this.productStore.reloadProducts(),
+      error: (err) => console.error('Delete failed', err),
+    });
   }
 
-  getCategoryName(id: string): string {
-    const map: Record<string, string> = {
-      '1': 'Suits',
-      '2': 'Bags',
-      '3': 'Shoes',
-      '4': 'Coats',
-      '5': 'Dresses',
-    };
-    return map[id] ?? 'Other';
+  getCategoryName(categoryId: any): string {
+    const id =
+      typeof categoryId === 'object' ? categoryId?._id?.toString() : categoryId?.toString();
+    const found = this.apiCategories.find((c) => c._id === id);
+    return found?.category_name ?? id ?? 'Unknown';
   }
 
-  // ── Featured (string _id) ─────────────────────────
+  // ── Featured ───────────────────────────────────────
+
   isFeatured(id: string): boolean {
     return this.auth.featuredProductIds().includes(id);
   }
@@ -348,22 +451,14 @@ export class AdminDashboard implements OnInit, OnDestroy {
     this.auth.toggleFeaturedProduct(id);
   }
 
-  // ── Orders ────────────────────────────────────────
+  // ── Orders ─────────────────────────────────────────
+
   get orders() {
     return this.auth.allOrders;
   }
 
-  // ── Users ─────────────────────────────────────────
-  refreshUsers(): void {
-    this.users = this.auth.getAllUsers();
-  }
+  // ── Promo Codes ────────────────────────────────────
 
-  toggleUser(id: number): void {
-    this.auth.toggleUserStatus(id);
-    this.refreshUsers();
-  }
-
-  // ── Promo Codes ───────────────────────────────────
   get promoCodes() {
     return this.auth.promoCodes();
   }
@@ -403,7 +498,8 @@ export class AdminDashboard implements OnInit, OnDestroy {
     this.auth.updatePromoCode(id, { active });
   }
 
-  // ── Banners ───────────────────────────────────────
+  // ── Banners ────────────────────────────────────────
+
   get banners() {
     return this.auth.banners();
   }
@@ -443,23 +539,22 @@ export class AdminDashboard implements OnInit, OnDestroy {
     this.auth.updateBanner(id, { active });
   }
 
-  // ── Stats ─────────────────────────────────────────
+  // ── Stats ──────────────────────────────────────────
+
   get stats() {
+    const blocked = this.dbUsers.filter((u) => u.isblocked).length;
+    const normalUsers = this.dbUsers.filter((u) => u.role === 'user').length;
     return {
       totalProducts: this.products.length,
       totalOrders: this.orders.length,
       totalRevenue: this.orders.reduce((s, o) => s + o.total, 0),
-      lowStock: this.products.filter((p) => p.quantity <= 2).length,
-      totalUsers: this.users.filter((u) => u.role === 'user').length,
-      restrictedUsers: this.users.filter((u) => u.status === 'restricted').length,
+      lowStock: this.products.filter((p) => (p.stock ?? p.quantity) <= 2).length,
+      totalUsers: normalUsers,
+      restrictedUsers: blocked,
     };
   }
 
   logout(): void {
     this.auth.logout();
-  }
-
-  ngOnDestroy(): void {
-    this.sub?.unsubscribe();
   }
 }

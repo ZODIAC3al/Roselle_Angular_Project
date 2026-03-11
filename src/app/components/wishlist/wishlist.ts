@@ -53,6 +53,7 @@ import { AuthService } from '../../services/auth.service';
 import { CartService } from '../../services/cart-service';
 import { StaticProducts } from '../../services/static-products';
 import { IProduct } from '../../models/iproduct';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-wishlist',
@@ -63,6 +64,7 @@ import { IProduct } from '../../models/iproduct';
 })
 export class Wishlist implements OnInit {
   wishlistProducts: IProduct[] = [];
+  private subscription: Subscription = new Subscription();
 
   constructor(
     private auth: AuthService,
@@ -75,15 +77,20 @@ export class Wishlist implements OnInit {
   }
 
   loadWishlist(): void {
-    const ids = this.auth.wishlist; // string[]
-    this.wishlistProducts = ids
-      .map((id) => this.products.getProductById(id))
-      .filter(Boolean) as IProduct[];
+    // Subscribe to products BehaviorSubject
+    this.subscription.add(
+      this.products.products$.subscribe((allProducts) => {
+        const ids = this.auth.wishlist; // string[]
+        this.wishlistProducts = ids
+          .map((id) => allProducts.find((p) => p._id === id))
+          .filter(Boolean) as IProduct[];
+      }),
+    );
   }
 
   remove(id: string): void {
     this.auth.toggleWishlist(id);
-    this.loadWishlist();
+    this.loadWishlist(); // reload after removing
   }
 
   addToCart(product: IProduct): void {
@@ -96,5 +103,9 @@ export class Wishlist implements OnInit {
 
   get isEmpty(): boolean {
     return this.wishlistProducts.length === 0;
+  }
+
+  ngOnDestroy(): void {
+    this.subscription.unsubscribe();
   }
 }

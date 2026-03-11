@@ -309,24 +309,24 @@
   <aside class="sidebar">
     <div class="sidebar-brand">Roselle <span>Admin</span></div>
     <nav class="sidebar-nav">
-      <button [class.active]="activeTab === 'products'" (click)="activeTab = 'products'">
+      <button [class.active]="activeTab === 'products'" (click)="onTabChange('products')">
         <i class="bi bi-box-seam"></i> Products
       </button>
-      <button [class.active]="activeTab === 'users'" (click)="activeTab = 'users'">
+      <button [class.active]="activeTab === 'users'" (click)="onTabChange('users')">
         <i class="bi bi-people"></i> Users
         <span class="badge" *ngIf="stats.restrictedUsers">{{ stats.restrictedUsers }}</span>
       </button>
-      <button [class.active]="activeTab === 'orders'" (click)="activeTab = 'orders'">
+      <button [class.active]="activeTab === 'orders'" (click)="onTabChange('orders')">
         <i class="bi bi-bag-check"></i> Orders
         <span class="badge" *ngIf="orders.length">{{ orders.length }}</span>
       </button>
-      <button [class.active]="activeTab === 'promos'" (click)="activeTab = 'promos'">
+      <button [class.active]="activeTab === 'promos'" (click)="onTabChange('promos')">
         <i class="bi bi-tag"></i> Promo Codes
       </button>
-      <button [class.active]="activeTab === 'content'" (click)="activeTab = 'content'">
+      <button [class.active]="activeTab === 'content'" (click)="onTabChange('content')">
         <i class="bi bi-images"></i> Content
       </button>
-      <button [class.active]="activeTab === 'stats'" (click)="activeTab = 'stats'">
+      <button [class.active]="activeTab === 'stats'" (click)="onTabChange('stats')">
         <i class="bi bi-bar-chart"></i> Analytics
       </button>
     </nav>
@@ -348,6 +348,7 @@
       <a routerLink="/Master" class="btn-store"><i class="bi bi-shop"></i> View Store</a>
     </div>
 
+    <!-- Stats -->
     <div class="stats-grid">
       <div class="stat-card">
         <i class="bi bi-box-seam"></i>
@@ -375,8 +376,8 @@
         <div>
           <span class="stat-val">{{
             stats.totalRevenue | currency: 'EGP' : 'symbol' : '1.0-0'
-          }}</span
-          ><span class="stat-label">Revenue</span>
+          }}</span>
+          <span class="stat-label">Revenue</span>
         </div>
       </div>
       <div class="stat-card warn">
@@ -395,11 +396,12 @@
       </div>
     </div>
 
+    <!-- Products Tab -->
     <div *ngIf="activeTab === 'products'">
       <div class="tab-toolbar">
         <div class="search-wrap">
-          <i class="bi bi-search"></i
-          ><input type="text" [(ngModel)]="searchTerm" placeholder="Search products..." />
+          <i class="bi bi-search"></i>
+          <input type="text" [(ngModel)]="searchTerm" placeholder="Search products..." />
         </div>
         <button class="btn-add" (click)="openAdd()">
           <i class="bi bi-plus-lg"></i> Add Product
@@ -423,8 +425,8 @@
                 <div class="product-cell">
                   <img [src]="p.imgUrl" [alt]="p.name" />
                   <div>
-                    <span class="product-name">{{ p.name }}</span
-                    ><span class="product-desc">{{ p.description | slice: 0 : 40 }}...</span>
+                    <span class="product-name">{{ p.name }}</span>
+                    <span class="product-desc">{{ p.description | slice: 0 : 40 }}...</span>
                   </div>
                 </div>
               </td>
@@ -461,20 +463,31 @@
       </div>
     </div>
 
+    <!-- Users Tab -->
     <div *ngIf="activeTab === 'users'">
-      <div class="products-table-wrap">
+      <!-- Loading state -->
+      <div *ngIf="usersLoading" style="text-align: center; padding: 40px; color: var(--muted)">
+        <i
+          class="bi bi-arrow-repeat"
+          style="font-size: 28px; display: block; margin-bottom: 8px"
+        ></i>
+        Loading users...
+      </div>
+
+      <div *ngIf="!usersLoading" class="products-table-wrap">
         <table class="products-table">
           <thead>
             <tr>
               <th>User</th>
               <th>Email</th>
               <th>Role</th>
+              <th>Verified</th>
               <th>Status</th>
               <th>Actions</th>
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let u of users">
+            <tr *ngFor="let u of dbUsers">
               <td>
                 <div class="product-cell">
                   <div class="user-icon-cell"><i class="bi bi-person-circle"></i></div>
@@ -493,25 +506,34 @@
                 >
               </td>
               <td>
-                <span class="stock-badge" [class.low]="u.status === 'restricted'">
-                  {{ u.status }}
+                <span class="stock-badge" [class.low]="!u.isVerified">
+                  {{ u.isVerified ? 'Verified' : 'Unverified' }}
+                </span>
+              </td>
+              <td>
+                <span class="stock-badge" [class.low]="u.isblocked">
+                  {{ u.isblocked ? 'Blocked' : 'Active' }}
                 </span>
               </td>
               <td>
                 <button
                   *ngIf="u.role !== 'admin'"
                   class="btn-toggle-user"
-                  [class.restrict]="u.status === 'active'"
-                  (click)="toggleUser(u.id)"
+                  [class.restrict]="!u.isblocked"
+                  (click)="toggleBlock(u)"
                 >
-                  <i
-                    [class]="u.status === 'active' ? 'bi bi-slash-circle' : 'bi bi-check-circle'"
-                  ></i>
-                  {{ u.status === 'active' ? 'Restrict' : 'Approve' }}
+                  <i [class]="!u.isblocked ? 'bi bi-slash-circle' : 'bi bi-check-circle'"></i>
+                  {{ u.isblocked ? 'Unblock' : 'Block' }}
                 </button>
                 <span *ngIf="u.role === 'admin'" style="color: var(--muted); font-size: 12px"
                   >—</span
                 >
+              </td>
+            </tr>
+            <tr *ngIf="dbUsers.length === 0">
+              <td colspan="6" class="empty-state">
+                <i class="bi bi-people"></i>
+                <p>No users found</p>
               </td>
             </tr>
           </tbody>
@@ -519,6 +541,7 @@
       </div>
     </div>
 
+    <!-- Orders Tab -->
     <div *ngIf="activeTab === 'orders'">
       <div *ngIf="orders.length === 0" class="empty-state">
         <i class="bi bi-bag-x"></i>
@@ -527,12 +550,13 @@
       <div class="orders-list" *ngIf="orders.length > 0">
         <div *ngFor="let o of orders" class="order-row">
           <div class="order-row-id">
-            <strong>{{ o.id }}</strong
-            ><span>{{ o.date }}</span>
+            <strong>{{ o.id }}</strong>
+            <span>{{ o.date }}</span>
           </div>
           <div class="order-row-info">
-            <span>{{ o.customerName }}</span
-            ><span>{{ o.items.length }} item(s)</span><span>{{ o.paymentMethod }}</span>
+            <span>{{ o.customerName }}</span>
+            <span>{{ o.items.length }} item(s)</span>
+            <span>{{ o.paymentMethod }}</span>
           </div>
           <span class="status-badge">{{ o.status }}</span>
           <span class="order-row-total">{{ o.total | currency: 'EGP' : 'symbol' : '1.0-0' }}</span>
@@ -540,6 +564,7 @@
       </div>
     </div>
 
+    <!-- Promos Tab -->
     <div *ngIf="activeTab === 'promos'">
       <div class="tab-toolbar">
         <h3 style="margin: 0; font-family: 'Cormorant Garamond', serif; font-size: 18px">
@@ -601,6 +626,7 @@
       </div>
     </div>
 
+    <!-- Content Tab -->
     <div *ngIf="activeTab === 'content'">
       <div class="content-section">
         <div class="tab-toolbar">
@@ -662,92 +688,103 @@
       </div>
     </div>
 
+    <!-- Stats Tab -->
     <div *ngIf="activeTab === 'stats'" class="analytics-placeholder">
       <i class="bi bi-bar-chart-line"></i>
       <h3>Analytics Dashboard</h3>
       <div class="analytics-grid">
         <div class="analytic-card">
-          <span class="ac-val">{{ stats.totalProducts }}</span
-          ><span class="ac-lbl">Total Products</span>
+          <span class="ac-val">{{ stats.totalProducts }}</span>
+          <span class="ac-lbl">Total Products</span>
         </div>
         <div class="analytic-card">
-          <span class="ac-val">{{ stats.totalUsers }}</span
-          ><span class="ac-lbl">Registered Users</span>
+          <span class="ac-val">{{ stats.totalUsers }}</span>
+          <span class="ac-lbl">Registered Users</span>
         </div>
         <div class="analytic-card">
-          <span class="ac-val">{{ stats.totalOrders }}</span
-          ><span class="ac-lbl">Total Orders</span>
+          <span class="ac-val">{{ stats.totalOrders }}</span>
+          <span class="ac-lbl">Total Orders</span>
         </div>
         <div class="analytic-card gold">
-          <span class="ac-val">{{ stats.totalRevenue | currency: 'EGP' : 'symbol' : '1.0-0' }}</span
-          ><span class="ac-lbl">Total Revenue</span>
+          <span class="ac-val">{{
+            stats.totalRevenue | currency: 'EGP' : 'symbol' : '1.0-0'
+          }}</span>
+          <span class="ac-lbl">Total Revenue</span>
         </div>
         <div class="analytic-card warn">
-          <span class="ac-val">{{ stats.lowStock }}</span
-          ><span class="ac-lbl">Low Stock Items</span>
+          <span class="ac-val">{{ stats.lowStock }}</span>
+          <span class="ac-lbl">Low Stock Items</span>
         </div>
         <div class="analytic-card warn">
-          <span class="ac-val">{{ stats.restrictedUsers }}</span
-          ><span class="ac-lbl">Restricted Users</span>
+          <span class="ac-val">{{ stats.restrictedUsers }}</span>
+          <span class="ac-lbl">Restricted Users</span>
         </div>
       </div>
     </div>
   </main>
 </div>
 
+<!-- Product Modal -->
 <div class="modal-overlay" *ngIf="showModal" (click)="showModal = false">
   <div class="modal-box" (click)="$event.stopPropagation()">
     <h2>{{ editingProduct ? 'Edit Product' : 'Add New Product' }}</h2>
     <button class="modal-close" (click)="showModal = false"><i class="bi bi-x-lg"></i></button>
     <div class="modal-form">
       <div class="mfield">
-        <label>Product Name</label
-        ><input type="text" [(ngModel)]="form.name" placeholder="e.g. Silk Evening Gown" />
+        <label>Product Name</label>
+        <input type="text" [(ngModel)]="form.name" placeholder="e.g. Silk Evening Gown" />
       </div>
       <div class="mrow">
         <div class="mfield">
-          <label>Price (EGP)</label><input type="number" [(ngModel)]="form.price" placeholder="0" />
+          <label>Price (EGP)</label>
+          <input type="number" [(ngModel)]="form.price" placeholder="0" />
         </div>
         <div class="mfield">
-          <label>Stock Qty</label
-          ><input type="number" [(ngModel)]="form.quantity" placeholder="1" />
+          <label>Stock Qty</label>
+          <input type="number" [(ngModel)]="form.stock" placeholder="1" />
         </div>
       </div>
       <div class="mfield">
         <label>Category</label>
         <select [(ngModel)]="form.categoryId">
-          <option value="1">Suits</option>
-          <option value="2">Bags</option>
-          <option value="3">Shoes</option>
-          <option value="4">Coats</option>
-          <option value="5">Dresses</option>
+          <option *ngFor="let c of apiCategories" [value]="c._id">{{ c.category_name }}</option>
         </select>
       </div>
       <div class="mfield">
-        <label>Image URL</label
-        ><input type="text" [(ngModel)]="form.imgUrl" placeholder="assets/images/img1.jpg" />
+        <label>Gender</label>
+        <select [(ngModel)]="form.gender">
+          <option value="unisex">Unisex</option>
+          <option value="women">Women</option>
+          <option value="men">Men</option>
+        </select>
       </div>
       <div class="mfield">
-        <label>Description</label><textarea [(ngModel)]="form.description" rows="3"></textarea>
+        <label>Image URL</label>
+        <input type="text" [(ngModel)]="form.imgUrl" placeholder="assets/images/img1.jpg" />
+      </div>
+      <div class="mfield">
+        <label>Description</label>
+        <textarea [(ngModel)]="form.description" rows="3"></textarea>
       </div>
     </div>
     <div class="modal-actions">
       <button class="btn-cancel" (click)="showModal = false">Cancel</button>
-      <button class="btn-save" (click)="save()">
-        {{ editingProduct ? 'Save Changes' : 'Add Product' }}
+      <button class="btn-save" (click)="save()" [disabled]="saving">
+        {{ saving ? 'Saving...' : editingProduct ? 'Save Changes' : 'Add Product' }}
       </button>
     </div>
   </div>
 </div>
 
+<!-- Promo Modal -->
 <div class="modal-overlay" *ngIf="showPromoModal" (click)="showPromoModal = false">
   <div class="modal-box" (click)="$event.stopPropagation()">
     <h2>{{ editingPromo ? 'Edit Promo Code' : 'New Promo Code' }}</h2>
     <button class="modal-close" (click)="showPromoModal = false"><i class="bi bi-x-lg"></i></button>
     <div class="modal-form">
       <div class="mfield">
-        <label>Promo Code</label
-        ><input
+        <label>Promo Code</label>
+        <input
           type="text"
           [(ngModel)]="promoForm.code"
           placeholder="e.g. SUMMER20"
@@ -763,8 +800,8 @@
           </select>
         </div>
         <div class="mfield">
-          <label>Value</label
-          ><input type="number" [(ngModel)]="promoForm.discountValue" placeholder="10" />
+          <label>Value</label>
+          <input type="number" [(ngModel)]="promoForm.discountValue" placeholder="10" />
         </div>
       </div>
       <div class="mfield" style="flex-direction: row; align-items: center; gap: 12px">
@@ -781,6 +818,7 @@
   </div>
 </div>
 
+<!-- Banner Modal -->
 <div class="modal-overlay" *ngIf="showBannerModal" (click)="showBannerModal = false">
   <div class="modal-box" (click)="$event.stopPropagation()">
     <h2>{{ editingBanner ? 'Edit Banner' : 'New Banner' }}</h2>
@@ -789,20 +827,20 @@
     </button>
     <div class="modal-form">
       <div class="mfield">
-        <label>Image URL</label
-        ><input
+        <label>Image URL</label>
+        <input
           type="text"
           [(ngModel)]="bannerForm.imageUrl"
           placeholder="assets/images/slider11.jpg"
         />
       </div>
       <div class="mfield">
-        <label>Title</label
-        ><input type="text" [(ngModel)]="bannerForm.title" placeholder="Banner headline" />
+        <label>Title</label>
+        <input type="text" [(ngModel)]="bannerForm.title" placeholder="Banner headline" />
       </div>
       <div class="mfield">
-        <label>Subtitle</label
-        ><input type="text" [(ngModel)]="bannerForm.subtitle" placeholder="Short description" />
+        <label>Subtitle</label>
+        <input type="text" [(ngModel)]="bannerForm.subtitle" placeholder="Short description" />
       </div>
       <div class="mfield" style="flex-direction: row; align-items: center; gap: 12px">
         <input type="checkbox" [(ngModel)]="bannerForm.active" id="bannerActive" />
