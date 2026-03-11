@@ -79,86 +79,122 @@
 //   }
 
 // }
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { StaticProducts } from '../../services/static-products';
-import { IProduct } from '../../models/iproduct';
 import { CommonModule, CurrencyPipe, Location } from '@angular/common';
 import { CartService } from '../../services/cart-service';
+import { ProductService } from '../../services/product.service';
+import { StaticProducts } from '../../services/static-products';
+import { IProduct } from '../../models/iproduct';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-details',
   standalone: true,
   imports: [CurrencyPipe, CommonModule, RouterLink],
   templateUrl: './details.html',
-  styleUrl: './details.css',
+  styleUrls: ['./details.css'],
 })
-export class Details implements OnInit {
-  currentId: string = ''; // _id is a string (MongoDB ObjectId)
+export class Details implements OnInit, OnDestroy {
+  currentId: string = '';
   product: IProduct | null = null;
   addedToCart: boolean = false;
-  idsArr: string[] = []; // string[] to match mapProductsToId()
+  loading: boolean = true;
+
+  idsArr: string[] = [];
   currentIdIndex: number = 0;
 
+  private _routeSub!: Subscription;
+  private _idsSub!: Subscription;
+
   constructor(
-    private _activatedRoute: ActivatedRoute,
-    private _detailsService: StaticProducts,
-    private _cartService: CartService,
-    private _location: Location,
-    private _router: Router,
+    private route: ActivatedRoute,
+    private productService: ProductService,
+    private prdService: StaticProducts,
+    private cartService: CartService,
+    private location: Location,
+    private router: Router,
   ) {}
 
   ngOnInit(): void {
-    // Wait for products to load from API, then resolve route param
-    this._activatedRoute.paramMap.subscribe((paramMap) => {
-      this.currentId = paramMap.get('id') ?? '';
-
-      // Products may not be loaded yet (async API call) — poll briefly
-      const tryLoad = () => {
-        this.idsArr = this._detailsService.mapProductsToId();
-        this.product = this._detailsService.getProductById(this.currentId);
-
-        if (!this.product && this.idsArr.length === 0) {
-          // Still loading — retry after short delay
-          setTimeout(tryLoad, 200);
-          return;
-        }
-
-        if (this.product) {
-          this.addedToCart = this._cartService.isInCart(this.product._id);
-        }
-      };
-
-      tryLoad();
+    // Keep idsArr synced with the full product list so Next/Previous always work
+    this._idsSub = this.prdService.products$.subscribe((products) => {
+      this.idsArr = products.map((p) => p._id);
+      // Recalculate index whenever the list updates
+      this.currentIdIndex = this.idsArr.findIndex((id) => id === this.currentId);
     });
+
+    this._routeSub = this.route.paramMap.subscribe((params) => {
+      const id = params.get('id');
+
+      if (!id) {
+        this.loading = false;
+        return;
+      }
+
+      this.currentId = id;
+      this.currentIdIndex = this.idsArr.findIndex((id) => id === this.currentId);
+      this.loading = true;
+      this.product = null;
+
+      this.productService.getProductById(id).subscribe({
+        next: (res) => {
+          const p = res.data.product;
+          this.product = {
+            ...p,
+            imgUrl: p.image,
+            quantity: p.stock,
+          };
+          this.addedToCart = this.cartService.isInCart(this.product._id);
+          this.loading = false;
+        },
+        error: () => {
+          this.product = null;
+          this.loading = false;
+        },
+      });
+    });
+  }
+
+  ngOnDestroy(): void {
+    this._routeSub?.unsubscribe();
+    this._idsSub?.unsubscribe();
   }
 
   addToCart(): void {
     if (this.product && this.product.quantity > 0) {
-      this._cartService.addToCart(this.product);
+      this.cartService.addToCart(this.product);
       this.addedToCart = true;
     }
   }
 
   goBack(): void {
-    this._location.back();
-  }
-
-  get cartCount(): number {
-    return this._cartService.getCartCount();
+    this.location.back();
   }
 
   goNext(): void {
     this.currentIdIndex = this.idsArr.findIndex((id) => id === this.currentId);
-    if (this.currentIdIndex !== this.idsArr.length - 1) {
-      this._router.navigateByUrl(`/Details/${this.idsArr[this.currentIdIndex + 1]}`);
+    if (this.currentIdIndex !== -1 && this.currentIdIndex < this.idsArr.length - 1) {
+      this.router.navigateByUrl(`/Details/${this.idsArr[this.currentIdIndex + 1]}`);
     }
   }
 
   goPrevious(): void {
     this.currentIdIndex = this.idsArr.findIndex((id) => id === this.currentId);
-    if (this.currentIdIndex !== 0) {
-      this._router.navigateByUrl(`/Details/${this.idsArr[this.currentIdIndex - 1]}`);
+    if (this.currentIdIndex > 0) {
+      this.router.navigateByUrl(`/Details/${this.idsArr[this.currentIdIndex - 1]}`);
     }
+  }
+
+  get isFirst(): boolean {
+    return this.currentIdIndex <= 0;
+  }
+
+  get isLast(): boolean {
+    return this.currentIdIndex >= this.idsArr.length - 1;
+  }
+
+  get cartCount(): number {
+    return this.cartService.getCartCount();
   }
 }
