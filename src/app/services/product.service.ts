@@ -1,8 +1,10 @@
-import { Injectable } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { IProduct } from '../models/iproduct';
+
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { Injectable } from '@angular/core';
+
 import { ICategory } from '../models/icategory';
+import { IProduct } from '../models/iproduct';
 
 export interface IProductsResponse {
   status: string;

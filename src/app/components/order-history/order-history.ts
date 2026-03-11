@@ -1,6 +1,7 @@
-import { Component, OnInit } from '@angular/core';
 import { CommonModule, CurrencyPipe } from '@angular/common';
+import { Component, computed } from '@angular/core';
 import { RouterLink } from '@angular/router';
+
 import { AuthService, IOrder } from '../../services/auth.service';
 
 @Component({
@@ -10,16 +11,16 @@ import { AuthService, IOrder } from '../../services/auth.service';
   templateUrl: './order-history.html',
   styleUrl: './order-history.css',
 })
-export class OrderHistory implements OnInit {
-  orders: IOrder[] = [];
+export class OrderHistory {
   expandedOrderId: string | null = null;
-
   statusSteps = ['confirmed', 'processing', 'shipped', 'delivered'];
 
   constructor(private auth: AuthService) {}
 
-  ngOnInit(): void {
-    this.orders = this.auth.orders;
+  // Reads directly from the signal every time the template evaluates —
+  // so newly placed orders appear immediately without any extra work.
+  get orders(): IOrder[] {
+    return this.auth.orders;
   }
 
   toggle(id: string): void {

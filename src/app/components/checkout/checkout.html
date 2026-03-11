@@ -19,14 +19,13 @@
   <div class="checkout-body">
     <!-- LEFT PANEL -->
     <div class="checkout-left">
-
       <!-- STEP 1: Info -->
       <div *ngIf="step === 1">
         <h2 class="section-title">Delivery Information</h2>
 
         <div class="guest-toggle">
-          <button [class.active]="!isGuest" (click)="isGuest=false">Sign In / Account</button>
-          <button [class.active]="isGuest" (click)="isGuest=true">Guest Checkout</button>
+          <button [class.active]="!isGuest" (click)="isGuest = false">Sign In / Account</button>
+          <button [class.active]="isGuest" (click)="isGuest = true">Guest Checkout</button>
         </div>
 
         <div class="form-grid">
@@ -102,7 +101,12 @@
         <div class="card-form" *ngIf="paymentMethod === 'credit'">
           <div class="field full">
             <label>Card Number</label>
-            <input type="text" [(ngModel)]="cardNumber" placeholder="1234 5678 9012 3456" maxlength="19" />
+            <input
+              type="text"
+              [(ngModel)]="cardNumber"
+              placeholder="1234 5678 9012 3456"
+              maxlength="19"
+            />
           </div>
           <div class="field full">
             <label>Cardholder Name</label>
@@ -135,13 +139,22 @@
         <div class="promo-section">
           <label>Promo Code</label>
           <div class="promo-row">
-            <input type="text" [(ngModel)]="promoCode" placeholder="Enter code (e.g. ROSELLE10)" [disabled]="promoApplied" />
-            <button class="btn-promo" (click)="applyPromo()" [disabled]="promoApplied || !promoCode">
+            <input
+              type="text"
+              [(ngModel)]="promoCode"
+              placeholder="Enter code (e.g. ROSELLE10)"
+              [disabled]="promoApplied"
+            />
+            <button
+              class="btn-promo"
+              (click)="applyPromo()"
+              [disabled]="promoApplied || !promoCode"
+            >
               {{ promoApplied ? '✓ Applied' : 'Apply' }}
             </button>
           </div>
           <p class="promo-success" *ngIf="promoApplied">
-            🎉 {{ promoDiscount | currency:'EGP':'symbol':'1.0-0' }} discount applied!
+            🎉 {{ promoDiscount | currency: 'EGP' : 'symbol' : '1.0-0' }} discount applied!
           </p>
         </div>
 
@@ -164,7 +177,9 @@
 
         <div class="review-section">
           <h3>Payment</h3>
-          <p *ngIf="paymentMethod === 'credit'">Credit Card ending in {{ cardNumber.slice(-4) || '****' }}</p>
+          <p *ngIf="paymentMethod === 'credit'">
+            Credit Card ending in {{ cardNumber.slice(-4) || '****' }}
+          </p>
           <p *ngIf="paymentMethod === 'paypal'">PayPal</p>
           <p *ngIf="paymentMethod === 'wallet'">Digital Wallet</p>
           <p *ngIf="paymentMethod === 'cod'">Cash on Delivery</p>
@@ -177,18 +192,31 @@
               <span class="review-item-name">{{ item.name }}</span>
               <span class="review-item-qty">Qty: {{ item.cartQuantity }}</span>
             </div>
-            <span class="review-item-price">{{ item.price * item.cartQuantity | currency:'EGP':'symbol':'1.0-0' }}</span>
+            <span class="review-item-price">{{
+              item.price * item.cartQuantity | currency: 'EGP' : 'symbol' : '1.0-0'
+            }}</span>
           </div>
         </div>
 
+        <!-- Payment error banner (only shows on failure) -->
+        <p *ngIf="paymentError" class="payment-error-msg">
+          <i class="bi bi-exclamation-triangle-fill"></i> {{ paymentError }}
+        </p>
+
         <div class="step-btns">
-          <button class="btn-back-step" (click)="prevStep()">← Back</button>
-          <button class="btn-place" (click)="placeOrder()">
-            <i class="bi bi-bag-check me-2"></i>Place Order
+          <button class="btn-back-step" (click)="prevStep()" [disabled]="isProcessing">
+            ← Back
+          </button>
+          <button class="btn-place" (click)="placeOrder()" [disabled]="isProcessing">
+            <ng-container *ngIf="!isProcessing">
+              <i class="bi bi-bag-check me-2"></i>Place Order
+            </ng-container>
+            <ng-container *ngIf="isProcessing">
+              <span class="pay-spinner"></span> Processing…
+            </ng-container>
           </button>
         </div>
       </div>
-
     </div>
 
     <!-- RIGHT: Summary -->
@@ -202,26 +230,30 @@
               <span class="qty-badge">{{ item.cartQuantity }}</span>
             </div>
             <span class="summary-item-name">{{ item.name }}</span>
-            <span class="summary-item-price">{{ item.price * item.cartQuantity | currency:'EGP':'symbol':'1.0-0' }}</span>
+            <span class="summary-item-price">{{
+              item.price * item.cartQuantity | currency: 'EGP' : 'symbol' : '1.0-0'
+            }}</span>
           </div>
         </div>
         <div class="summary-divider"></div>
         <div class="summary-row">
           <span>Subtotal</span>
-          <span>{{ subtotal | currency:'EGP':'symbol':'1.0-0' }}</span>
+          <span>{{ subtotal | currency: 'EGP' : 'symbol' : '1.0-0' }}</span>
         </div>
         <div class="summary-row">
           <span>Shipping</span>
-          <span [class.free]="shipping === 0">{{ shipping === 0 ? 'Free' : (shipping | currency:'EGP':'symbol':'1.0-0') }}</span>
+          <span [class.free]="shipping === 0">{{
+            shipping === 0 ? 'Free' : (shipping | currency: 'EGP' : 'symbol' : '1.0-0')
+          }}</span>
         </div>
         <div class="summary-row discount" *ngIf="promoApplied">
           <span>Discount</span>
-          <span>- {{ discount | currency:'EGP':'symbol':'1.0-0' }}</span>
+          <span>- {{ discount | currency: 'EGP' : 'symbol' : '1.0-0' }}</span>
         </div>
         <div class="summary-divider"></div>
         <div class="summary-row total">
           <span>Total</span>
-          <span>{{ total | currency:'EGP':'symbol':'1.0-0' }}</span>
+          <span>{{ total | currency: 'EGP' : 'symbol' : '1.0-0' }}</span>
         </div>
         <div class="trust-strip">
           <span><i class="bi bi-shield-lock"></i> Secure Checkout</span>
