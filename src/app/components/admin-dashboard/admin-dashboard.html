@@ -335,7 +335,6 @@
     </button>
   </aside>
 
-  <!-- Main -->
   <main class="admin-main">
     <div class="admin-topbar">
       <h1>
@@ -349,7 +348,6 @@
       <a routerLink="/Master" class="btn-store"><i class="bi bi-shop"></i> View Store</a>
     </div>
 
-    <!-- Stats -->
     <div class="stats-grid">
       <div class="stat-card">
         <i class="bi bi-box-seam"></i>
@@ -397,7 +395,6 @@
       </div>
     </div>
 
-    <!-- PRODUCTS TAB -->
     <div *ngIf="activeTab === 'products'">
       <div class="tab-toolbar">
         <div class="search-wrap">
@@ -464,7 +461,6 @@
       </div>
     </div>
 
-    <!-- USERS TAB -->
     <div *ngIf="activeTab === 'users'">
       <div class="products-table-wrap">
         <table class="products-table">
@@ -523,7 +519,6 @@
       </div>
     </div>
 
-    <!-- ORDERS TAB -->
     <div *ngIf="activeTab === 'orders'">
       <div *ngIf="orders.length === 0" class="empty-state">
         <i class="bi bi-bag-x"></i>
@@ -545,7 +540,6 @@
       </div>
     </div>
 
-    <!-- PROMO CODES TAB -->
     <div *ngIf="activeTab === 'promos'">
       <div class="tab-toolbar">
         <h3 style="margin: 0; font-family: 'Cormorant Garamond', serif; font-size: 18px">
@@ -607,9 +601,7 @@
       </div>
     </div>
 
-    <!-- CONTENT TAB -->
     <div *ngIf="activeTab === 'content'">
-      <!-- Banners -->
       <div class="content-section">
         <div class="tab-toolbar">
           <h3 style="margin: 0; font-family: 'Cormorant Garamond', serif; font-size: 18px">
@@ -646,7 +638,6 @@
         </div>
       </div>
 
-      <!-- Featured Products -->
       <div class="content-section" style="margin-top: 28px">
         <div class="tab-toolbar">
           <h3 style="margin: 0; font-family: 'Cormorant Garamond', serif; font-size: 18px">
@@ -671,7 +662,6 @@
       </div>
     </div>
 
-    <!-- STATS TAB -->
     <div *ngIf="activeTab === 'stats'" class="analytics-placeholder">
       <i class="bi bi-bar-chart-line"></i>
       <h3>Analytics Dashboard</h3>
@@ -705,7 +695,6 @@
   </main>
 </div>
 
-<!-- Product Modal -->
 <div class="modal-overlay" *ngIf="showModal" (click)="showModal = false">
   <div class="modal-box" (click)="$event.stopPropagation()">
     <h2>{{ editingProduct ? 'Edit Product' : 'Add New Product' }}</h2>
@@ -751,7 +740,6 @@
   </div>
 </div>
 
-<!-- Promo Modal -->
 <div class="modal-overlay" *ngIf="showPromoModal" (click)="showPromoModal = false">
   <div class="modal-box" (click)="$event.stopPropagation()">
     <h2>{{ editingPromo ? 'Edit Promo Code' : 'New Promo Code' }}</h2>
@@ -793,7 +781,6 @@
   </div>
 </div>
 
-<!-- Banner Modal -->
 <div class="modal-overlay" *ngIf="showBannerModal" (click)="showBannerModal = false">
   <div class="modal-box" (click)="$event.stopPropagation()">
     <h2>{{ editingBanner ? 'Edit Banner' : 'New Banner' }}</h2>
