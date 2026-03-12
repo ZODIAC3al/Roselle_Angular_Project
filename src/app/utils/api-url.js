@@ -1,1 +1,2 @@
-export const BaseUrl = 'https://node-ecommerce-psi.vercel.app';
+export const BaseUrl = 'https://roselle-shop.vercel.app';
+

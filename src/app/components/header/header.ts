@@ -22,9 +22,7 @@ export class Header  {
     private cart: CartService,
     private router: Router
   ) {}
-ngOnInit() {
-    this.auth.initAuth(); 
-  }
+
   @HostListener('window:scroll')
   onScroll(): void { this.isScrolled = window.scrollY > 10; }
 

@@ -17,6 +17,7 @@ import { AdminDashboard } from './components/admin-dashboard/admin-dashboard';
 import { Wishlist } from './components/wishlist/wishlist';
 import { OrderHistory } from './components/order-history/order-history';
 import { Profile } from './components/profile/profile';
+import { Resetpassword } from './components/resetpassword/resetpassword';
 
 export const routes: Routes = [
   { path: '', component: MasterProducts },
@@ -32,6 +33,7 @@ export const routes: Routes = [
   { path: 'signup', component: Signup },
   { path: 'verify-otp', component: OtpVerify },
   { path: 'forgot-password', component: ForgotPassword },
+  {path:'Resetpassword',component:Resetpassword},
 
   // Shopping
   { path: 'checkout', component: Checkout },

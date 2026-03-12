@@ -1,6 +1,8 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, signal } from '@angular/core';
 import { Router } from '@angular/router';
+export const BaseUrl: string = 'https://roselle-shop.vercel.app';
+
 
 export interface IUser {
   id: number;
@@ -145,7 +147,7 @@ export class AuthService {
   promoCodes = this._promoCodes.asReadonly();
   banners = this._banners.asReadonly();
   featuredProductIds = this._featuredProductIds.asReadonly();
-  apiUrl = 'http://localhost:3000/api';
+  
 
   constructor(
     private router: Router,
@@ -176,33 +178,38 @@ export class AuthService {
   }
 
   register(data: { email: string; phone: string; name: string; password: string }) {
-    return this.http.post(`${this.apiUrl}/user/signup`, data);
+    return this.http.post(`${BaseUrl}/api/user/signup`, data);
   }
 
   signup_google(idToken: any) {
-    return this.http.post(`${this.apiUrl}/user/signup_bygoogle`, { idToken });
+    return this.http.post(`${BaseUrl}/api/user/signup_bygoogle`, { idToken });
   }
 
   verifyOtp(otp: string) {
     const email = this._pendingEmail();
     if (!email) throw new Error('No pending email found');
-    return this.http.post(`${this.apiUrl}/user/verify_account`, { otp, email });
+    return this.http.post(`${BaseUrl}/api/user/verify_account`, { otp, email });
   }
 
   resendotp() {
     const e = this._pendingEmail();
     if (!e) throw new Error('No pending email found');
-    return this.http.post(`${this.apiUrl}/user/resend_otp`, { email: e });
+    return this.http.post(`http://localhost:3000/api/user/resend_otp`, { email: e });
   }
 
-  logout() {
-    return this.http.get(`${this.apiUrl}/user/logout`);
-  }
+
+    logout() {
+  return this.http.get(`http://localhost:3000/api/user/logout`, { withCredentials: true });
+}
+  
 
   login(email: string, password: string) {
-    return this.http.post(`${this.apiUrl}/user/login`, { email, password });
+    return this.http.post(`${BaseUrl}/api/user/login`, { email, password });
   }
 
+   forget_pass(otp:string,new_password:string,email:string){
+    return this.http.post(`http://localhost:3000/api/user/forget_password`, { email,otp,new_password });
+   }
   sendPasswordReset(email: string): boolean {
     const user = this.users.find((u) => u.email === email);
     if (!user) return false;
@@ -214,7 +221,7 @@ export class AuthService {
   }
 
   getMe() {
-    return this.http.get<any>(`${this.apiUrl}/user/myprofile`);
+    return this.http.get<any>(`${BaseUrl}/api/user/myprofile`);
   }
 
   initAuth() {

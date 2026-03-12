@@ -71,21 +71,44 @@ import { AuthService } from '../../services/auth.service';
   `]
 })
 export class ForgotPassword {
-  email = '';
-  isLoading = false;
+  email        = '';
+  isLoading    = false;
   errorMessage = '';
-  sent = false;
+  sent         = false;
 
   constructor(private auth: AuthService, private router: Router) {}
 
   onSubmit(): void {
-    if (!this.email) { this.errorMessage = 'Please enter your email.'; return; }
-    this.isLoading = true;
-    setTimeout(() => {
-      const ok = this.auth.sendPasswordReset(this.email);
-      this.isLoading = false;
-      if (ok) { this.sent = true; this.errorMessage = ''; }
-      else { this.errorMessage = 'No account found with this email.'; }
-    }, 800);
+    console.log('[ForgotPassword] onSubmit →', { email: this.email });
+
+    if (!this.email) {
+      this.errorMessage = 'Please enter your email.';
+      return;
+    }
+
+    this.isLoading    = true;
+    this.errorMessage = '';
+
+    this.auth.setPendingEmail(this.email);
+
+   
+    this.auth.resendotp().subscribe({
+      next: (res: any) => {
+        console.log('[ForgotPassword] resendotp response:', res);
+        this.isLoading = false;
+
+        if (res.status === 'success') {
+          this.router.navigateByUrl('/Resetpassword')
+        } else {
+          console.warn('[ForgotPassword] ⚠️ non-success:', res);
+          this.errorMessage = res.message || 'Could not send reset code';
+        }
+      },
+      error: (err) => {
+        console.error('[ForgotPassword] ❌ error:', err);
+        this.isLoading    = false;
+        this.errorMessage = err.error?.message || 'No account found with this email.';
+      },
+    });
   }
 }
