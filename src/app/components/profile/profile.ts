@@ -1,7 +1,9 @@
-import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { HttpClient } from '@angular/common/http'; // <-- Added to make the API call
+import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink, Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
+
 import { AuthService, IUser } from '../../services/auth.service';
 
 @Component({
@@ -32,9 +34,13 @@ export class Profile implements OnInit {
   expiry = '';
 
   orderCount = 0;
-  wishlistCount = 0;
+  wishlistCount = 0; // Changed back to a normal property
 
-  constructor(private auth: AuthService, private router: Router) {}
+  constructor(
+    private auth: AuthService,
+    private router: Router,
+    private http: HttpClient, // <-- Injected HttpClient
+  ) {}
 
   ngOnInit(): void {
     if (!this.auth.isLoggedIn()) {
@@ -57,13 +63,36 @@ export class Profile implements OnInit {
   }
 
   loadCounts(): void {
-  this.auth.orders().subscribe({
-    next: (orders: any[]) => (this.orderCount = orders?.length ?? 0),
-    error: () => (this.orderCount = 0),
-  });
+    // 1. Load Orders Counter
+    this.auth.orders().subscribe({
+      next: (res: any) => {
+        if (!this.user) {
+          this.orderCount = 0;
+          return;
+        }
 
-  this.wishlistCount = this.auth.wishlist.length;
-}
+        const allOrders = res.orders || [];
+        const myUserId = this.user.id || (this.user as any)._id;
+        const myOrders = allOrders.filter((order: any) => order.user_id === myUserId);
+        this.orderCount = myOrders.length;
+      },
+      error: () => {
+        this.orderCount = 0;
+      },
+    });
+
+    // 2. Load Wishlist (Favorites) Counter directly from your API
+    this.http.get('http://localhost:3000/api/products/getFavourites').subscribe({
+      next: (res: any) => {
+        // Grab the count straight from the "results" property in your JSON,
+        // or fallback to the length of the "data" array just in case
+        this.wishlistCount = res.results || res.data?.length || 0;
+      },
+      error: () => {
+        this.wishlistCount = 0;
+      },
+    });
+  }
 
   savePersonal(): void {
     this.isLoading = true;
@@ -81,33 +110,12 @@ export class Profile implements OnInit {
     });
   }
 
-saveAddress(): void {
-  this.isLoading = true;
-  this.auth.updateProfile({ Address: this.address }).subscribe({  
-    next: (res) => {
-      this.loadUser();
-      this.showSuccess('Address saved!');
-      this.isLoading = false;
-    },
-    error: () => {
-      this.errorMsg = 'Failed to save. Please try again.';
-      this.isLoading = false;
-      setTimeout(() => (this.errorMsg = ''), 3000);
-    },
-  });
-}
-
-  savePayment(): void {
+  saveAddress(): void {
     this.isLoading = true;
-    this.auth.updateProfile({
-      paymentDetails: {
-        cardHolder: this.cardHolder,
-        cardNumber: this.cardNumber,
-        expiry: this.expiry,
-      },
-    }).subscribe({
-      next: () => {
-        this.showSuccess('Payment details saved!');
+    this.auth.updateProfile({ Address: this.address }).subscribe({
+      next: (res) => {
+        this.loadUser();
+        this.showSuccess('Address saved!');
         this.isLoading = false;
       },
       error: () => {
@@ -116,6 +124,29 @@ saveAddress(): void {
         setTimeout(() => (this.errorMsg = ''), 3000);
       },
     });
+  }
+
+  savePayment(): void {
+    this.isLoading = true;
+    this.auth
+      .updateProfile({
+        paymentDetails: {
+          cardHolder: this.cardHolder,
+          cardNumber: this.cardNumber,
+          expiry: this.expiry,
+        },
+      })
+      .subscribe({
+        next: () => {
+          this.showSuccess('Payment details saved!');
+          this.isLoading = false;
+        },
+        error: () => {
+          this.errorMsg = 'Failed to save. Please try again.';
+          this.isLoading = false;
+          setTimeout(() => (this.errorMsg = ''), 3000);
+        },
+      });
   }
 
   confirmDelete(): void {
@@ -129,7 +160,7 @@ saveAddress(): void {
   deleteAccount(): void {
     this.auth.delete().subscribe({
       next: () => {
-        this.auth.logout(); // make sure you have a logout method that clears the user
+        this.auth.logout();
         this.router.navigate(['/']);
       },
       error: () => {
