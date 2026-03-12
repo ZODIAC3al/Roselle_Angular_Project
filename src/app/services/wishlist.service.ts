@@ -1,7 +1,9 @@
+import { Observable, of, tap } from 'rxjs';
+
 import { Injectable, signal } from '@angular/core';
-import { Observable, tap, of } from 'rxjs';
-import { ProductService } from './product.service';
+
 import { IProduct } from '../models/iproduct';
+import { ProductService } from './product.service';
 
 @Injectable({ providedIn: 'root' })
 export class WishlistService {
@@ -29,7 +31,8 @@ export class WishlistService {
     return this.productApi.getFavourites().pipe(
       tap((res) => {
         // Backend returns: { status, data: { products: [...] } }
-        const raw: any[] = res?.data?.products ?? res?.products ?? [];
+        // AFTER
+        const raw: any[] = res?.data?.products ?? res?.data ?? res?.products ?? [];
         const mapped = raw.map((p: any) => this._map(p));
         this._products.set(mapped);
         this._ids.set(new Set(mapped.map((p) => p._id)));
