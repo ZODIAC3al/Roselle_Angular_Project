@@ -34,7 +34,7 @@ export class Login implements OnInit {
     // ✅ Initialize Google Sign-In once
     this.loadGoogleScript().then(() => {
       google.accounts.id.initialize({
-        client_id: '865370854342-5ud0m2a1id89m4u7ml9cu5uteuf1k5u1.apps.googleusercontent.com',
+        client_id: '865370854342-r760ofn2tqrhki20hnukl7a6d6g1hoi6.apps.googleusercontent.com',
         callback: (googleRes: any) => this.handleGoogleCallback(googleRes),
       });
     });
