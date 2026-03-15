@@ -47,7 +47,7 @@ export class Checkout implements OnInit {
   isProcessing = false;
   paymentError = '';
 
-  private readonly cartBase = 'http://localhost:3000/api/cart';
+  private readonly cartBase = 'https://node-ecommerce-bay.vercel.app/api/cart';
 
   constructor(
     private cartService: CartService,

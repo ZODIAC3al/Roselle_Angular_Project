@@ -1,2 +1,2 @@
-export const BaseUrl = 'https://roselle-shop.vercel.app';
+export const BaseUrl = 'https://node-ecommerce-bay.vercel.app';
 

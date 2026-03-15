@@ -32,7 +32,7 @@ export interface IBackendOrder {
 
 @Injectable({ providedIn: 'root' })
 export class OrderService {
-  private readonly base = 'http://localhost:3000/api/order';
+  private readonly base = 'https://node-ecommerce-bay.vercel.app/api/order';
 
   constructor(private http: HttpClient) {}
 

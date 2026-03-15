@@ -23,7 +23,7 @@ export interface IProductPayload {
 
 @Injectable({ providedIn: 'root' })
 export class ProductService {
-  private baseUrl = 'http://localhost:3000/api/products';
+  private baseUrl = 'https://node-ecommerce-bay.vercel.app/api/products';
 
   constructor(private http: HttpClient) {}
 
